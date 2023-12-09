@@ -39,7 +39,8 @@ class _DrawerPageState extends State<DrawerPage> {
 
     if (user != null) {
       // Reference to the 'users' collection in Firestore
-      CollectionReference usersCollection = FirebaseFirestore.instance.collection('users');
+      CollectionReference usersCollection =
+          FirebaseFirestore.instance.collection('userlist');
 
       // Query to find the user with the specified user_id (assuming 'user_id' is a field in your documents)
       QuerySnapshot querySnapshot = await usersCollection
@@ -54,10 +55,8 @@ class _DrawerPageState extends State<DrawerPage> {
 
         // Extract the 'username' field from the document
         var username = userDocument['username'];
-         print(username);
-        // Return the username
-        return username;
 
+        return username ?? "userName";
       } else {
         // No user found with the specified user_id
         return null;
@@ -68,12 +67,10 @@ class _DrawerPageState extends State<DrawerPage> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    Future<String?> username =  fetchUsernameForCurrentUser() ;
+    // Future<String?> username = fetchUsernameForCurrentUser();
 
     return Drawer(
       child: ListView(
@@ -81,18 +78,32 @@ class _DrawerPageState extends State<DrawerPage> {
         padding: EdgeInsets.zero,
         children: <Widget>[
           UserAccountsDrawerHeader(
-            accountName: Text(
-             // 'User : ${username}',
-                'User : Jyoti',
+            accountName: FutureBuilder<String?>(
+              future: fetchUsernameForCurrentUser(),
+              builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                return Text(
+                  'Hello ${snapshot.data ?? "User"}',
+                );
+              },
             ),
             accountEmail: Text(
               'Email : ${AuthService.getProfileEmail()}',
             ),
             currentAccountPicture: CircleAvatar(
               backgroundColor: Colors.white,
-              child: Text(
-                "J",
-                style: TextStyle(fontSize: 40.0, color: Colors.blue),
+              child: FutureBuilder<String?>(
+                future: fetchUsernameForCurrentUser(),
+                builder:
+                    (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    return Text(
+                      "${snapshot.data?.substring(0, 1)}",
+                      style: TextStyle(fontSize: 40.0, color: Colors.blue),
+                    );
+                  } else {
+                    return CircularProgressIndicator();
+                  }
+                },
               ),
             ),
           ),
@@ -101,9 +112,9 @@ class _DrawerPageState extends State<DrawerPage> {
             title: Text("Home"),
             onTap: () {
               Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const Home()),
-                    );
+                context,
+                MaterialPageRoute(builder: (context) => const Home()),
+              );
             },
           ),
           ListTile(
@@ -117,10 +128,9 @@ class _DrawerPageState extends State<DrawerPage> {
             leading: Icon(Icons.add_chart),
             title: Text("Charts"),
             onTap: () {
-              Get.to(()=>Statistics());
+              Get.to(() => Statistics());
             },
           ),
-
           ListTile(
             leading: Icon(Icons.payment_sharp),
             title: Text("Regular payments"),
@@ -170,7 +180,7 @@ class _DrawerPageState extends State<DrawerPage> {
             leading: Icon(Icons.logout),
             title: Text("Log out"),
             onTap: () {
-                _signOut();
+              _signOut();
             },
           ),
         ],
