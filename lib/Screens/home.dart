@@ -1,7 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:expense_manager/data/listdata.dart';
 import 'package:expense_manager/data/model/add_date.dart';
 import 'package:expense_manager/data/utlity.dart';
 
@@ -24,6 +24,39 @@ class _HomeState extends State<Home> {
     'saturday',
     'sunday'
   ];
+
+  Future<String?> fetchUsernameForCurrentUser() async {
+    // Check if the user is authenticated
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user != null) {
+      // Reference to the 'users' collection in Firestore
+      CollectionReference usersCollection = FirebaseFirestore.instance.collection('userlist');
+
+      // Query to find the user with the specified user_id (assuming 'user_id' is a field in your documents)
+      QuerySnapshot querySnapshot = await usersCollection
+          .where('user_id', isEqualTo: user.uid)
+          .limit(1)
+          .get();
+
+      // Check if any documents match the query
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the first document
+        var userDocument = querySnapshot.docs.first;
+
+        // Extract the 'username' field from the document
+        var username = userDocument['username'];
+
+        return username ?? "userName";
+      } else {
+        // No user found with the specified user_id
+        return null;
+      }
+    } else {
+      // User is not authenticated
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,20 +190,37 @@ class _HomeState extends State<Home> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Hi',
+                          'Hey',
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 20,
                             color: Color.fromARGB(255, 224, 223, 223),
                           ),
                         ),
-                        Text(
-                          'Jyoti ',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 20,
-                            color: Colors.white,
-                          ),
+                      //   Text(
+                      //     'Jyoti ',
+                      //     style: TextStyle(
+                      //       fontWeight: FontWeight.w600,
+                      //       fontSize: 20,
+                      //       color: Colors.white,
+                      //     ),
+                      //   ),
+                        FutureBuilder<String?>(
+                          future: fetchUsernameForCurrentUser(),
+                          builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
+                            if (snapshot.connectionState == ConnectionState.done) {
+                              return Text(
+                                '${snapshot.data ?? "User"}',
+                                  style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 30,
+                                        color: Colors.white,
+                                      ),
+                              );
+                            } else {
+                              return CircularProgressIndicator();
+                            }
+                          },
                         ),
                       ],
                     ),
